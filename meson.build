@@ -11,12 +11,17 @@ add_project_arguments('-Wno-unused-parameter', language: 'c')
 
 cc = meson.get_compiler('c')
 
-cairo = dependency('cairo')
-realtime = cc.find_library('rt')
+# cairo = dependency('cairo')
+# realtime = cc.find_library('rt')
+# wayland_cursor = dependency('wayland-cursor')
 wayland_client = dependency('wayland-client')
-wayland_cursor = dependency('wayland-cursor')
 wayland_protos = dependency('wayland-protocols', version: '>=1.32')
-xkbcommon = dependency('xkbcommon')
+egl = dependency('egl')
+open_gl = dependency('glesv2')
+wayland_egl = dependency('wayland-egl')
+
+
+# xkbcommon = dependency('xkbcommon')
 
 subdir('protocol')
 
@@ -27,11 +32,10 @@ executable(
         protos_src,
     ],
     dependencies: [
-        cairo,
-        realtime,
         wayland_client,
-        wayland_cursor,
-        xkbcommon,
+        egl,
+        open_gl, 
+        wayland_egl
     ],
     include_directories: 'include',
     install: true,
