@@ -1,6 +1,6 @@
 #include <EGL/egl.h>
 #include <EGL/eglplatform.h>
-#include <GLES2/gl2.h>
+#include <GL/gl.h>
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,7 +19,7 @@ static void send_frame(struct gn_state *state) {
         return;
     }
 
-    glClearColor(1.0f, 1.0f, 1.0f, 0.3f);
+    glClearColor(0.05f, 0.05f, 0.05f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
     eglSwapBuffers(state->egl_display, output->egl_surface);
 
@@ -153,9 +153,8 @@ int main(int argc, char **argv) {
                                      EGL_ALPHA_SIZE,
                                      8,
                                      EGL_RENDERABLE_TYPE,
-                                     EGL_OPENGL_ES2_BIT,
+                                     EGL_OPENGL_BIT,
                                      EGL_NONE};
-    eglBindAPI(EGL_OPENGL_ES_API);
     EGLint num_configs;
     eglChooseConfig(state.egl_display, config_attribs, &state.egl_config, 1,
                     &num_configs);
@@ -179,13 +178,13 @@ int main(int argc, char **argv) {
                                        &layer_surface_listener, &state);
 
     wl_surface_commit(state.output.surface);
-    wl_display_roundtrip(state.display);
 
     state.running = true;
     while (state.running && wl_display_dispatch(state.display) != -1) {
         ;
     }
 
+    // Ensure compositor has unmapped surfaces
     wl_display_roundtrip(state.display);
 
     if (state.output.frame_callback) {
