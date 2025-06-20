@@ -11,6 +11,8 @@
 #define STATE_INITIAL_STROKES 64
 
 struct gn_output {
+    struct gn_state *state;
+
     struct wl_callback *frame_callback;
     bool configured;
     bool dirty;
@@ -37,10 +39,13 @@ struct gn_state {
     struct gn_output output;
 
     struct gn_stroke *strokes;
-    size_t n_strokes;
-    size_t capacity;
+    size_t n_strokes, c_strokes;
+
+    struct wl_list seats; // gn_seat::link
 
     GLuint line_prog, line_vao, line_vbo;
 };
+
+void set_output_dirty(struct gn_state *state);
 
 #endif

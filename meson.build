@@ -31,6 +31,7 @@ executable(
         'main.c',
         'render.c',
         'stroke.c',
+        'seat.c',
         protos_src,
     ],
     dependencies: [

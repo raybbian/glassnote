@@ -2,8 +2,8 @@
 #define _GN_UTILS_H
 
 struct gn_point {
-    double x;
-    double y;
+    float x;
+    float y;
 };
 
 struct gn_box {

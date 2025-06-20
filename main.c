@@ -7,13 +7,28 @@
 #include <string.h>
 #include <wayland-client-protocol.h>
 #include <wayland-client.h>
+#include <wayland-util.h>
 
 #include "glassnote.h"
 #include "render.h"
+#include "seat.h"
 #include "stroke.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 
 static const struct wl_callback_listener output_frame_listener;
+
+void set_output_dirty(struct gn_state *state) {
+    struct gn_output *output = &state->output;
+    output->dirty = true;
+    if (output->frame_callback) {
+        return;
+    }
+
+    output->frame_callback = wl_surface_frame(output->surface);
+    wl_callback_add_listener(output->frame_callback, &output_frame_listener,
+                             state);
+    wl_surface_commit(output->surface);
+}
 
 static void send_frame(struct gn_state *state) {
     struct gn_output *output = &state->output;
@@ -101,6 +116,10 @@ static void registry_handle_global(void *data, struct wl_registry *registry,
     } else if (strcmp(iface, zwlr_layer_shell_v1_interface.name) == 0) {
         state->layer_shell =
             wl_registry_bind(registry, name, &zwlr_layer_shell_v1_interface, 1);
+    } else if (strcmp(iface, wl_seat_interface.name) == 0) {
+        struct wl_seat *wl_seat =
+            wl_registry_bind(registry, name, &wl_seat_interface, 1);
+        create_seat(state, wl_seat);
     }
 }
 
@@ -113,12 +132,14 @@ int main(int argc, char **argv) {
     struct gn_state state = {};
 
     // TODO: no hardcode
-    state.capacity = STATE_INITIAL_STROKES;
-    state.strokes = calloc(state.capacity, sizeof(struct gn_stroke));
+    state.c_strokes = STATE_INITIAL_STROKES;
+    state.strokes = calloc(state.c_strokes, sizeof(struct gn_stroke));
     if (state.strokes == NULL) {
         fprintf(stderr, "Failed to allocate space for strokes");
         return EXIT_FAILURE;
     }
+
+    wl_list_init(&state.seats);
 
     state.display = wl_display_connect(NULL);
     if (!state.display) {
@@ -192,6 +213,11 @@ int main(int argc, char **argv) {
     state.running = true;
     while (state.running && wl_display_dispatch(state.display) != -1) {
         ;
+    }
+
+    struct gn_seat *seat_tmp, *seat;
+    wl_list_for_each_safe(seat, seat_tmp, &state.seats, link) {
+        destroy_seat(seat);
     }
 
     // Ensure compositor has unmapped surfaces

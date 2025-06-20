@@ -5,15 +5,16 @@
 #include "stroke.h"
 #include "utils.h"
 
-int start_stroke(struct gn_state *state, double line_width, int32_t color) {
-    if (state->n_strokes == state->capacity) {
-        state->capacity *= 2;
-        state->strokes =
-            realloc(state->strokes, state->capacity * sizeof(struct gn_stroke));
+struct gn_stroke *create_stroke(struct gn_state *state, double line_width,
+                                int32_t color) {
+    if (state->n_strokes == state->c_strokes) {
+        state->c_strokes *= 2;
+        state->strokes = realloc(state->strokes,
+                                 state->c_strokes * sizeof(struct gn_stroke));
 
         if (state->strokes == NULL) {
             fprintf(stderr, "Failed to allocate memory for more strokes\n");
-            return EXIT_FAILURE;
+            return NULL;
         }
     }
 
@@ -28,20 +29,25 @@ int start_stroke(struct gn_state *state, double line_width, int32_t color) {
 
     if (stroke->pts == NULL) {
         fprintf(stderr, "Failed to allocate memory for stroke points\n");
-        return EXIT_FAILURE;
+        return NULL;
     }
-    return EXIT_SUCCESS;
+    return stroke;
 }
 
-int extend_stroke(struct gn_stroke *stroke, double x, double y) {
+void extend_stroke(struct gn_stroke *stroke, double x, double y) {
     if (stroke->n_pts == stroke->capacity) {
+        if (stroke->capacity >= STROKE_MAX_PTS) {
+            fprintf(stderr, "Stroke has too many points\n");
+            return;
+        }
+
         stroke->capacity *= 2;
         stroke->pts =
             realloc(stroke->pts, stroke->capacity * sizeof(struct gn_point));
 
         if (stroke->pts == NULL) {
             fprintf(stderr, "Failed to allocate memory for more strokes\n");
-            return EXIT_FAILURE;
+            return;
         }
     }
 
@@ -50,7 +56,6 @@ int extend_stroke(struct gn_stroke *stroke, double x, double y) {
     stroke->pts[stroke->n_pts].x = x;
     stroke->pts[stroke->n_pts].y = y;
     stroke->n_pts++;
-    return EXIT_SUCCESS;
 }
 
 void destroy_stroke(struct gn_stroke *stroke) {

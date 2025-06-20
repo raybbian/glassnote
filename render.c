@@ -1,8 +1,11 @@
-#include "glassnote.h"
 #include <GLES3/gl32.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "glassnote.h"
+#include "stroke.h"
+#include "utils.h"
 
 static GLuint compile_shader(GLenum type, const char *src) {
     GLuint s = glCreateShader(type);
@@ -49,21 +52,14 @@ void init_gl(struct gn_state *state) {
                                 "}\n";
     state->line_prog = link_program(compile_shader(GL_VERTEX_SHADER, vs_src),
                                     compile_shader(GL_FRAGMENT_SHADER, fs_src));
+
     glUseProgram(state->line_prog);
-
-    const int N = 64;
-    float pts[N * 2];
-    for (int i = 0; i < N; ++i) {
-        float t = (float)i / (N - 1);
-        pts[2 * i] = -0.8f + 1.6f * t;
-        pts[2 * i + 1] = -0.8f + 1.6f * t;
-    }
-
     glGenVertexArrays(1, &state->line_vao);
     glGenBuffers(1, &state->line_vbo);
     glBindVertexArray(state->line_vao);
     glBindBuffer(GL_ARRAY_BUFFER, state->line_vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(pts), pts, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, STROKE_MAX_PTS * sizeof(struct gn_point),
+                 NULL, GL_DYNAMIC_DRAW);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
@@ -76,5 +72,12 @@ void render(struct gn_state *state) {
 
     glUseProgram(state->line_prog);
     glBindVertexArray(state->line_vao);
-    glDrawArrays(GL_LINE_STRIP, 0, 64);
+    glBindBuffer(GL_ARRAY_BUFFER, state->line_vbo);
+
+    for (size_t i = 0; i < state->n_strokes; i++) {
+        glBufferSubData(GL_ARRAY_BUFFER, 0,
+                        state->strokes[i].n_pts * sizeof(struct gn_point),
+                        state->strokes[i].pts);
+        glDrawArrays(GL_LINE_STRIP, 0, state->strokes[i].n_pts);
+    }
 }
