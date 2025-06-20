@@ -1,6 +1,6 @@
 #include <EGL/egl.h>
 #include <EGL/eglplatform.h>
-#include <GL/gl.h>
+#include <GLES3/gl32.h>
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,6 +9,8 @@
 #include <wayland-client.h>
 
 #include "glassnote.h"
+#include "render.h"
+#include "stroke.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 
 static const struct wl_callback_listener output_frame_listener;
@@ -19,8 +21,7 @@ static void send_frame(struct gn_state *state) {
         return;
     }
 
-    glClearColor(0.05f, 0.05f, 0.05f, 0.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
+    render(state);
     eglSwapBuffers(state->egl_display, output->egl_surface);
 
     output->frame_callback = wl_surface_frame(output->surface);
@@ -58,20 +59,19 @@ static void layer_surface_handle_configure(
     output->width = width;
     output->height = height;
     if (!output->configured) {
+        // TODO: error checking
         output->configured = true;
 
         output->egl_window =
             wl_egl_window_create(output->surface, width, height);
-        if (output->egl_window == EGL_NO_SURFACE) {
-            fprintf(stderr, "Can't create egl window\n");
-            exit(EXIT_FAILURE);
-        }
         output->egl_surface = eglCreateWindowSurface(
             state->egl_display, state->egl_config,
             (EGLNativeWindowType)output->egl_window, NULL);
 
         eglMakeCurrent(state->egl_display, output->egl_surface,
                        output->egl_surface, state->egl_context);
+
+        init_gl(state);
     }
     wl_egl_window_resize(output->egl_window, width, height, 0, 0);
     glViewport(0, 0, width, height);
@@ -112,6 +112,14 @@ static const struct wl_registry_listener registry_listener = {
 int main(int argc, char **argv) {
     struct gn_state state = {};
 
+    // TODO: no hardcode
+    state.capacity = STATE_INITIAL_STROKES;
+    state.strokes = calloc(state.capacity, sizeof(struct gn_stroke));
+    if (state.strokes == NULL) {
+        fprintf(stderr, "Failed to allocate space for strokes");
+        return EXIT_FAILURE;
+    }
+
     state.display = wl_display_connect(NULL);
     if (!state.display) {
         fprintf(stderr, "Failed to connect to Wayland\n");
@@ -131,6 +139,7 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
+    eglBindAPI(EGL_OPENGL_ES_API);
     state.egl_display = eglGetDisplay((EGLNativeDisplayType)state.display);
     if (state.egl_display == EGL_NO_DISPLAY) {
         fprintf(stderr, "Can't create egl display\n");
@@ -153,13 +162,14 @@ int main(int argc, char **argv) {
                                      EGL_ALPHA_SIZE,
                                      8,
                                      EGL_RENDERABLE_TYPE,
-                                     EGL_OPENGL_BIT,
+                                     EGL_OPENGL_ES3_BIT,
                                      EGL_NONE};
     EGLint num_configs;
     eglChooseConfig(state.egl_display, config_attribs, &state.egl_config, 1,
                     &num_configs);
 
-    const EGLint ctx_attribs[] = {EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE};
+    const EGLint ctx_attribs[] = {EGL_CONTEXT_CLIENT_VERSION, 3,
+                                  EGL_CONTEXT_MINOR_VERSION, 2, EGL_NONE};
     state.egl_context = eglCreateContext(state.egl_display, state.egl_config,
                                          EGL_NO_CONTEXT, ctx_attribs);
 
@@ -201,6 +211,8 @@ int main(int argc, char **argv) {
     wl_compositor_destroy(state.compositor);
     wl_registry_destroy(state.registry);
     wl_display_disconnect(state.display);
+
+    free(state.strokes);
 
     return EXIT_SUCCESS;
 }

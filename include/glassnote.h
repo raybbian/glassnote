@@ -2,20 +2,15 @@
 #define _GLASSNOTE_H
 
 #include <EGL/egl.h>
+#include <GL/gl.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <wayland-client.h>
 #include <wayland-egl.h>
 
-struct gn_box {
-    int32_t x, y;
-    int32_t width, height;
-};
+#define STATE_INITIAL_STROKES 64
 
 struct gn_output {
-    struct gn_box geometry;
-    struct gn_box logical_geometry;
-    int32_t scale;
-
     struct wl_callback *frame_callback;
     bool configured;
     bool dirty;
@@ -40,6 +35,12 @@ struct gn_state {
     EGLContext egl_context;
 
     struct gn_output output;
+
+    struct gn_stroke *strokes;
+    size_t n_strokes;
+    size_t capacity;
+
+    GLuint line_prog, line_vao, line_vbo;
 };
 
 #endif

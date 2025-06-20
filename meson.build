@@ -29,6 +29,8 @@ executable(
     'glassnote',
     [
         'main.c',
+        'render.c',
+        'stroke.c',
         protos_src,
     ],
     dependencies: [
