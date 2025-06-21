@@ -131,7 +131,6 @@ static const struct wl_registry_listener registry_listener = {
 int main(int argc, char **argv) {
     struct gn_state state = {};
 
-    // TODO: no hardcode
     state.c_strokes = STATE_INITIAL_STROKES;
     state.strokes = calloc(state.c_strokes, sizeof(struct gn_stroke));
     if (state.strokes == NULL) {
@@ -238,6 +237,9 @@ int main(int argc, char **argv) {
     wl_registry_destroy(state.registry);
     wl_display_disconnect(state.display);
 
+    for (size_t i = 0; i < state.n_strokes; i++) {
+        destroy_stroke(&state.strokes[i]);
+    }
     free(state.strokes);
 
     return EXIT_SUCCESS;

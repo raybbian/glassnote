@@ -19,6 +19,7 @@ wayland_protos = dependency('wayland-protocols', version: '>=1.32')
 egl = dependency('egl')
 open_gl = dependency('glesv2')
 wayland_egl = dependency('wayland-egl')
+math = cc.find_library('m')
 
 
 # xkbcommon = dependency('xkbcommon')
@@ -38,7 +39,8 @@ executable(
         wayland_client,
         egl,
         open_gl, 
-        wayland_egl
+        wayland_egl,
+        math
     ],
     include_directories: 'include',
     install: true,

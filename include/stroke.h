@@ -16,6 +16,9 @@ struct gn_stroke {
 
     float line_width;
     int32_t color;
+
+    // metrics
+    size_t pts_reported;
 };
 
 struct gn_stroke *create_stroke(struct gn_state *state, double line_width,

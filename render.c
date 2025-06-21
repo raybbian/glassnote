@@ -75,6 +75,8 @@ void render(struct gn_state *state) {
     glBindBuffer(GL_ARRAY_BUFFER, state->line_vbo);
 
     for (size_t i = 0; i < state->n_strokes; i++) {
+        // printf("stroke %zu has n_pts %zu reported pts %zu\n", i,
+        //        state->strokes[i].n_pts, state->strokes[i].pts_reported);
         glBufferSubData(GL_ARRAY_BUFFER, 0,
                         state->strokes[i].n_pts * sizeof(struct gn_point),
                         state->strokes[i].pts);
