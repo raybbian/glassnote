@@ -33,4 +33,12 @@ static inline struct gn_point gn_minus(struct gn_point a, struct gn_point b) {
     return (struct gn_point){a.x - b.x, a.y - b.y};
 }
 
+static inline float gn_perp_dist(struct gn_point p, struct gn_point a,
+                                 struct gn_point b) {
+    float A = b.y - a.y;
+    float B = a.x - b.x;
+    float C = b.x * a.y - a.x * b.y;
+    return fabsf(A * p.x + B * p.y + C) / sqrtf(A * A + B * B);
+}
+
 #endif

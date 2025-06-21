@@ -49,8 +49,7 @@ static void pointer_handle_motion(void *data, struct wl_pointer *wl_pointer,
 
     double x = wl_fixed_to_double(surface_x);
     double y = wl_fixed_to_double(surface_y);
-    extend_stroke(seat->cur_stroke, x / seat->state->output.width * 2 - 1,
-                  -(y / seat->state->output.height * 2 - 1));
+    extend_stroke(seat->cur_stroke, x, y);
 
     set_output_dirty(seat->state);
 }

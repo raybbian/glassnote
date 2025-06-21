@@ -44,7 +44,7 @@ struct gn_state {
 
     struct wl_list seats; // gn_seat::link
 
-    GLuint line_prog, line_vao, line_vbo;
+    GLuint line_prog, line_vao, line_vbo, line_res_loc;
 };
 
 void set_output_dirty(struct gn_state *state);

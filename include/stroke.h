@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <wayland-util.h>
 
 #include "glassnote.h"
 
@@ -17,7 +18,10 @@ struct gn_stroke {
     float line_width;
     int32_t color;
 
-    // metrics
+    // index of segment start
+    // https://www.inkandswitch.com/ink/notes/super-simple-stroke-simplification/
+    size_t seg_st;
+    // metrics for perf
     size_t pts_reported;
 };
 

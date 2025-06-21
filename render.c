@@ -39,11 +39,14 @@ static GLuint link_program(GLuint vs, GLuint fs) {
 }
 
 void init_gl(struct gn_state *state) {
-    static const char *vs_src = "#version 320 es\n"
-                                "layout(location = 0) in vec2 a_pos;\n"
-                                "void main() {\n"
-                                "  gl_Position = vec4(a_pos, 0.0, 1.0);\n"
-                                "}\n";
+    static const char *vs_src =
+        "#version 320 es\n"
+        "layout(location = 0) in vec2 a_pos;\n"
+        "uniform vec2 u_resolution;\n"
+        "void main() {\n"
+        "vec2 clipSpace = a_pos / u_resolution * 2.0 - 1.0;\n"
+        "  gl_Position = vec4(clipSpace * vec2(1.0, -1.0), 0.0, 1.0);\n"
+        "}\n";
     static const char *fs_src = "#version 320 es\n"
                                 "precision mediump float;\n"
                                 "out vec4 fragColor;\n"
@@ -52,6 +55,9 @@ void init_gl(struct gn_state *state) {
                                 "}\n";
     state->line_prog = link_program(compile_shader(GL_VERTEX_SHADER, vs_src),
                                     compile_shader(GL_FRAGMENT_SHADER, fs_src));
+
+    state->line_res_loc =
+        glGetUniformLocation(state->line_prog, "u_resolution");
 
     glUseProgram(state->line_prog);
     glGenVertexArrays(1, &state->line_vao);
@@ -73,6 +79,9 @@ void render(struct gn_state *state) {
     glUseProgram(state->line_prog);
     glBindVertexArray(state->line_vao);
     glBindBuffer(GL_ARRAY_BUFFER, state->line_vbo);
+
+    glUniform2f(state->line_res_loc, (float)state->output.width,
+                (float)state->output.height);
 
     for (size_t i = 0; i < state->n_strokes; i++) {
         // printf("stroke %zu has n_pts %zu reported pts %zu\n", i,

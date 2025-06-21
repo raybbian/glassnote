@@ -5,6 +5,8 @@
 #include "stroke.h"
 #include "utils.h"
 
+#define STROKE_SIMPLIFICATION_THRESHOLD 1.5f
+
 struct gn_stroke *create_stroke(struct gn_state *state, double line_width,
                                 int32_t color) {
     if (state->n_strokes == state->c_strokes) {
@@ -38,26 +40,30 @@ struct gn_stroke *create_stroke(struct gn_state *state, double line_width,
 void extend_stroke(struct gn_stroke *stroke, double x, double y) {
     stroke->pts_reported++;
 
-    if (stroke->n_pts >= 2) {
-        struct gn_point prev = gn_minus(stroke->pts[stroke->n_pts - 1],
-                                        stroke->pts[stroke->n_pts - 2]);
-        struct gn_point next =
-            gn_minus((struct gn_point){x, y}, stroke->pts[stroke->n_pts - 1]);
+    if (stroke->seg_st + 1 < stroke->n_pts) {
+        struct gn_point n_pt = {x, y};
+        float max_dist = 0.0;
+        size_t index = -1;
 
-        float prev_len = gn_norm(prev);
-        float next_len = gn_norm(next);
-
-        if (prev_len == 0.0 || next_len == 0.0) {
-            goto add_point;
-        }
-        // if the angle exceeds ~0.1 radians, we add the point
-        if (gn_dot(prev, next) / (gn_norm(prev) * gn_norm(next)) < 0.995) {
-            goto add_point;
+        for (size_t i = stroke->seg_st + 1; i < stroke->n_pts; i++) {
+            float dist =
+                gn_perp_dist(stroke->pts[i], stroke->pts[stroke->seg_st], n_pt);
+            if (dist > max_dist) {
+                max_dist = dist;
+                index = i;
+            }
         }
 
-        stroke->pts[stroke->n_pts - 1].x = x;
-        stroke->pts[stroke->n_pts - 1].y = y;
-        return;
+        if (max_dist < STROKE_SIMPLIFICATION_THRESHOLD) {
+            goto add_point;
+        }
+
+        stroke->seg_st++;
+        for (size_t i = index; i < stroke->n_pts; i++) {
+            stroke->pts[i - index + stroke->seg_st] = stroke->pts[i];
+        }
+        stroke->n_pts = stroke->n_pts - index + stroke->seg_st;
+        // continue to add the point
     }
 
 add_point:
