@@ -4,14 +4,34 @@
 #include <wayland-client-protocol.h>
 #include <wayland-util.h>
 
+#include "cursor-shape-v1-client-protocol.h"
 #include "glassnote.h"
 #include "seat.h"
 #include "stroke.h"
 
+static void seat_handle_pressed(struct gn_seat *seat) {
+    if (seat->cur_stroke != NULL) {
+        return;
+    }
+    seat->cur_stroke = create_stroke(seat->state, 3.0f, 0xff0000ff);
+}
+
+static void seat_handle_released(struct gn_seat *seat) {
+    seat->cur_stroke = NULL;
+}
+
 static void pointer_handle_enter(void *data, struct wl_pointer *wl_pointer,
                                  uint32_t serial, struct wl_surface *surface,
                                  wl_fixed_t surface_x, wl_fixed_t surface_y) {
-    ;
+    struct gn_seat *seat = data;
+
+    // TODO: support compositors without shape manager
+    struct wp_cursor_shape_device_v1 *device =
+        wp_cursor_shape_manager_v1_get_pointer(
+            seat->state->cursor_shape_manager, wl_pointer);
+    wp_cursor_shape_device_v1_set_shape(
+        device, serial, WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_CROSSHAIR);
+    wp_cursor_shape_device_v1_destroy(device);
 }
 
 static void pointer_handle_leave(void *data, struct wl_pointer *wl_pointer,
@@ -42,13 +62,10 @@ static void pointer_handle_button(void *data, struct wl_pointer *wl_pointer,
 
     switch (button_state) {
     case WL_POINTER_BUTTON_STATE_PRESSED:
-        if (seat->cur_stroke != NULL) {
-            return;
-        }
-        seat->cur_stroke = create_stroke(seat->state, 3.0f, 0xff0000ff);
+        seat_handle_pressed(seat);
         break;
     case WL_POINTER_BUTTON_STATE_RELEASED:
-        seat->cur_stroke = NULL;
+        seat_handle_released(seat);
         break;
     }
 }

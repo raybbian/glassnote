@@ -1,6 +1,7 @@
 #ifndef _GN_SEAT_H
 #define _GN_SEAT_H
 
+#include <wayland-client-protocol.h>
 #include <wayland-util.h>
 
 #include "glassnote.h"

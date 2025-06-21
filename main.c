@@ -9,6 +9,7 @@
 #include <wayland-client.h>
 #include <wayland-util.h>
 
+#include "cursor-shape-v1-client-protocol.h"
 #include "glassnote.h"
 #include "render.h"
 #include "seat.h"
@@ -120,6 +121,9 @@ static void registry_handle_global(void *data, struct wl_registry *registry,
         struct wl_seat *wl_seat =
             wl_registry_bind(registry, name, &wl_seat_interface, 1);
         create_seat(state, wl_seat);
+    } else if (strcmp(iface, wp_cursor_shape_manager_v1_interface.name) == 0) {
+        state->cursor_shape_manager = wl_registry_bind(
+            registry, name, &wp_cursor_shape_manager_v1_interface, 1);
     }
 }
 
@@ -156,6 +160,10 @@ int main(int argc, char **argv) {
     }
     if (state.layer_shell == NULL) {
         fprintf(stderr, "Compositor doesn't support zwlr_layer_shell_v1\n");
+        return EXIT_FAILURE;
+    }
+    if (state.cursor_shape_manager == NULL) {
+        fprintf(stderr, "Compositor doesn't support zwp_shape_manager\n");
         return EXIT_FAILURE;
     }
 

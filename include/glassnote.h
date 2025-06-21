@@ -31,6 +31,7 @@ struct gn_state {
     struct wl_registry *registry;
     struct wl_compositor *compositor;
     struct zwlr_layer_shell_v1 *layer_shell;
+    struct wp_cursor_shape_manager_v1 *cursor_shape_manager;
 
     EGLDisplay egl_display;
     EGLConfig egl_config;
