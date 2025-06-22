@@ -32,6 +32,9 @@ struct gn_state {
     struct wl_compositor *compositor;
     struct zwlr_layer_shell_v1 *layer_shell;
     struct wp_cursor_shape_manager_v1 *cursor_shape_manager;
+    struct xkb_context *xkb_context;
+
+    struct wl_region *empty_region;
 
     EGLDisplay egl_display;
     EGLConfig egl_config;
@@ -44,9 +47,11 @@ struct gn_state {
 
     struct wl_list seats; // gn_seat::link
 
-    GLuint line_prog, line_vao, line_vbo, line_res_loc;
+    GLuint line_prog;
+    GLuint line_vao, line_vbo, line_res_loc;
 };
 
+void noop();
 void set_output_dirty(struct gn_state *state);
 
 #endif

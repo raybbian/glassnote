@@ -8,6 +8,7 @@
 #include <wayland-client-protocol.h>
 #include <wayland-client.h>
 #include <wayland-util.h>
+#include <xkbcommon/xkbcommon.h>
 
 #include "cursor-shape-v1-client-protocol.h"
 #include "glassnote.h"
@@ -15,6 +16,8 @@
 #include "seat.h"
 #include "stroke.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
+
+void noop() { ; }
 
 static const struct wl_callback_listener output_frame_listener;
 
@@ -150,6 +153,11 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
+    if ((state.xkb_context = xkb_context_new(XKB_CONTEXT_NO_FLAGS)) == NULL) {
+        fprintf(stderr, "xkb_context_new failed\n");
+        return EXIT_FAILURE;
+    }
+
     state.registry = wl_display_get_registry(state.display);
     wl_registry_add_listener(state.registry, &registry_listener, &state);
     wl_display_roundtrip(state.display);
@@ -166,6 +174,8 @@ int main(int argc, char **argv) {
         fprintf(stderr, "Compositor doesn't support zwp_shape_manager\n");
         return EXIT_FAILURE;
     }
+
+    state.empty_region = wl_compositor_create_region(state.compositor);
 
     eglBindAPI(EGL_OPENGL_ES_API);
     state.egl_display = eglGetDisplay((EGLNativeDisplayType)state.display);
@@ -212,6 +222,9 @@ int main(int argc, char **argv) {
                                          ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT |
                                          ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT);
     zwlr_layer_surface_v1_set_exclusive_zone(state.output.layer_surface, -1);
+    zwlr_layer_surface_v1_set_keyboard_interactivity(
+        state.output.layer_surface,
+        ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_ON_DEMAND);
     zwlr_layer_surface_v1_add_listener(state.output.layer_surface,
                                        &layer_surface_listener, &state);
 
@@ -230,6 +243,8 @@ int main(int argc, char **argv) {
     // Ensure compositor has unmapped surfaces
     wl_display_roundtrip(state.display);
 
+    cleanup_gl(&state);
+
     if (state.output.frame_callback) {
         wl_callback_destroy(state.output.frame_callback);
     }
@@ -240,9 +255,14 @@ int main(int argc, char **argv) {
 
     eglDestroyContext(state.egl_display, state.egl_context);
     eglTerminate(state.egl_display);
+
+    wl_region_destroy(state.empty_region);
+
     zwlr_layer_shell_v1_destroy(state.layer_shell);
+    wp_cursor_shape_manager_v1_destroy(state.cursor_shape_manager);
     wl_compositor_destroy(state.compositor);
     wl_registry_destroy(state.registry);
+    xkb_context_unref(state.xkb_context);
     wl_display_disconnect(state.display);
 
     for (size_t i = 0; i < state.n_strokes; i++) {

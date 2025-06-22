@@ -12,6 +12,9 @@ struct gn_seat {
     struct wl_list link; // gn_state::seats
 
     struct wl_keyboard *wl_keyboard;
+    struct xkb_keymap *xkb_keymap;
+    struct xkb_state *xkb_state;
+
     struct wl_pointer *wl_pointer;
     struct wl_touch *wl_touch;
 

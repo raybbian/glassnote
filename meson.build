@@ -20,6 +20,7 @@ egl = dependency('egl')
 open_gl = dependency('glesv2')
 wayland_egl = dependency('wayland-egl')
 math = cc.find_library('m')
+xkbcommon = dependency('xkbcommon')
 
 
 # xkbcommon = dependency('xkbcommon')
@@ -40,7 +41,8 @@ executable(
         egl,
         open_gl, 
         wayland_egl,
-        math
+        math,
+        xkbcommon
     ],
     include_directories: 'include',
     install: true,

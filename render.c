@@ -53,8 +53,13 @@ void init_gl(struct gn_state *state) {
                                 "void main() {\n"
                                 "  fragColor = vec4(1.0, 0.0, 0.0, 1.0);\n"
                                 "}\n";
-    state->line_prog = link_program(compile_shader(GL_VERTEX_SHADER, vs_src),
-                                    compile_shader(GL_FRAGMENT_SHADER, fs_src));
+    GLuint vs = compile_shader(GL_VERTEX_SHADER, vs_src);
+    GLuint fs = compile_shader(GL_FRAGMENT_SHADER, fs_src);
+    state->line_prog = link_program(vs, fs);
+    glDetachShader(state->line_prog, vs);
+    glDetachShader(state->line_prog, fs);
+    glDeleteShader(vs);
+    glDeleteShader(fs);
 
     state->line_res_loc =
         glGetUniformLocation(state->line_prog, "u_resolution");
@@ -70,6 +75,13 @@ void init_gl(struct gn_state *state) {
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
     glLineWidth(3.0f);
+}
+
+void cleanup_gl(struct gn_state *state) {
+    glUseProgram(0);
+    glDeleteProgram(state->line_prog);
+    glDeleteBuffers(1, &state->line_vbo);
+    glDeleteVertexArrays(1, &state->line_vao);
 }
 
 void render(struct gn_state *state) {

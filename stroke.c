@@ -95,5 +95,4 @@ void destroy_stroke(struct gn_stroke *stroke) {
     if (stroke->pts != NULL) {
         free(stroke->pts);
     }
-    free(stroke);
 }
