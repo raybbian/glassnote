@@ -17,6 +17,8 @@
 #define GN_STATE_INIT_COLOR_3 0xdf8e1dff
 #define GN_STATE_INIT_COLOR_4 0x40a02bff
 #define GN_STATE_INIT_COLOR_5 0x179299ff
+#define GN_STATE_INIT_BG_COLOR_INACTIVE 0xffffff00
+#define GN_STATE_INIT_BG_COLOR_ACTIVE 0xffffff0a
 
 struct gn_output {
     struct gn_state *state;
@@ -54,6 +56,7 @@ struct gn_state {
 
     struct gn_output output;
 
+    int32_t bg_colors[2];
     int32_t colors[5];
     size_t color_ind;
     float cur_stroke_width;

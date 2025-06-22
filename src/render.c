@@ -8,12 +8,20 @@
 #include "stroke.h"
 #include "utils.h"
 
-static void unpack_rgba_i32(int32_t rgba, float out_color[static 4]) {
-    const float inv255 = 1.0f / 255.0f;
-    out_color[0] = ((rgba >> 24) & 0xFF) * inv255;
-    out_color[1] = ((rgba >> 16) & 0xFF) * inv255;
-    out_color[2] = ((rgba >> 8) & 0xFF) * inv255;
-    out_color[3] = (rgba & 0xFF) * inv255;
+static const float inv255 = 1.0f / 255.0f;
+
+static void unpack_rgba_i32(int32_t rgba, float out[static 4]) {
+    out[0] = ((rgba >> 24) & 0xFF) * inv255;
+    out[1] = ((rgba >> 16) & 0xFF) * inv255;
+    out[2] = ((rgba >> 8) & 0xFF) * inv255;
+    out[3] = (rgba & 0xFF) * inv255;
+}
+
+static void unpack_rgba_i32_premul(int32_t rgba, float out[static 4]) {
+    out[3] = (rgba & 0xFF) * inv255;
+    out[0] = ((rgba >> 24) & 0xFF) * inv255 * out[3];
+    out[1] = ((rgba >> 16) & 0xFF) * inv255 * out[3];
+    out[2] = ((rgba >> 8) & 0xFF) * inv255 * out[3];
 }
 
 static GLuint compile_shader(GLenum type, const char *src) {
@@ -97,6 +105,11 @@ void cleanup_gl(struct gn_state *state) {
 }
 
 void render(struct gn_state *state) {
+    float buf[4];
+    unpack_rgba_i32_premul(state->bg_colors[state->active], buf);
+
+    // glClearColor wants premultiplied alpha values
+    glClearColor(buf[0], buf[1], buf[2], buf[3]);
     glClear(GL_COLOR_BUFFER_BIT);
 
     glUseProgram(state->line_prog);
@@ -106,7 +119,6 @@ void render(struct gn_state *state) {
     glUniform2f(state->line_res_loc, (float)state->output.width,
                 (float)state->output.height);
 
-    float buf[4];
     for (size_t i = 0; i < state->n_strokes; i++) {
         // printf("stroke %zu has n_pts %zu reported pts %zu\n", i,
         //        state->strokes[i].n_pts, state->strokes[i].pts_reported);

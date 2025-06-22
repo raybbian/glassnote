@@ -143,6 +143,8 @@ int main(int argc, char **argv) {
     struct gn_state state = {
         .active = true,
         .color_ind = 0,
+        .bg_colors = {GN_STATE_INIT_BG_COLOR_INACTIVE,
+                      GN_STATE_INIT_BG_COLOR_ACTIVE},
         .colors = {GN_STATE_INIT_COLOR_1, GN_STATE_INIT_COLOR_2,
                    GN_STATE_INIT_COLOR_3, GN_STATE_INIT_COLOR_4,
                    GN_STATE_INIT_COLOR_5},
