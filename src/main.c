@@ -140,9 +140,16 @@ static const struct wl_registry_listener registry_listener = {
 };
 
 int main(int argc, char **argv) {
-    struct gn_state state = {};
+    struct gn_state state = {
+        .active = true,
+        .color_ind = 0,
+        .colors = {GN_STATE_INIT_COLOR_1, GN_STATE_INIT_COLOR_2,
+                   GN_STATE_INIT_COLOR_3, GN_STATE_INIT_COLOR_4,
+                   GN_STATE_INIT_COLOR_5},
+        .cur_stroke_width = GN_STATE_INIT_WIDTH,
+        .c_strokes = GN_STATE_INIT_STROKES,
+    };
 
-    state.c_strokes = STATE_INITIAL_STROKES;
     state.strokes = calloc(state.c_strokes, sizeof(struct gn_stroke));
     if (state.strokes == NULL) {
         fprintf(stderr, "Failed to allocate space for strokes");

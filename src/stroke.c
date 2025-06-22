@@ -7,7 +7,7 @@
 
 #define STROKE_SIMPLIFICATION_THRESHOLD 1.5f
 
-struct gn_stroke *create_stroke(struct gn_state *state, double line_width,
+struct gn_stroke *create_stroke(struct gn_state *state, double width,
                                 int32_t color) {
     if (state->n_strokes == state->c_strokes) {
         state->c_strokes *= 2;
@@ -26,7 +26,7 @@ struct gn_stroke *create_stroke(struct gn_state *state, double line_width,
     stroke->capacity = STROKE_DEFAULT_CAPACITY;
     stroke->n_pts = 0;
     stroke->pts_reported = 0;
-    stroke->line_width = line_width;
+    stroke->width = width;
     stroke->color = color;
     stroke->pts = calloc(stroke->capacity, sizeof(struct gn_point));
 

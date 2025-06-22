@@ -1,3 +1,4 @@
+#include <GL/gl.h>
 #include <GLES3/gl32.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,6 +7,14 @@
 #include "glassnote.h"
 #include "stroke.h"
 #include "utils.h"
+
+static void unpack_rgba_i32(int32_t rgba, float out_color[static 4]) {
+    const float inv255 = 1.0f / 255.0f;
+    out_color[0] = ((rgba >> 24) & 0xFF) * inv255;
+    out_color[1] = ((rgba >> 16) & 0xFF) * inv255;
+    out_color[2] = ((rgba >> 8) & 0xFF) * inv255;
+    out_color[3] = (rgba & 0xFF) * inv255;
+}
 
 static GLuint compile_shader(GLenum type, const char *src) {
     GLuint s = glCreateShader(type);
@@ -50,8 +59,9 @@ void init_gl(struct gn_state *state) {
     static const char *fs_src = "#version 320 es\n"
                                 "precision mediump float;\n"
                                 "out vec4 fragColor;\n"
+                                "uniform vec4 u_color;\n"
                                 "void main() {\n"
-                                "  fragColor = vec4(1.0, 0.0, 0.0, 1.0);\n"
+                                "  fragColor = u_color;\n"
                                 "}\n";
     GLuint vs = compile_shader(GL_VERTEX_SHADER, vs_src);
     GLuint fs = compile_shader(GL_FRAGMENT_SHADER, fs_src);
@@ -63,6 +73,7 @@ void init_gl(struct gn_state *state) {
 
     state->line_res_loc =
         glGetUniformLocation(state->line_prog, "u_resolution");
+    state->line_col_loc = glGetUniformLocation(state->line_prog, "u_color");
 
     glUseProgram(state->line_prog);
     glGenVertexArrays(1, &state->line_vao);
@@ -74,7 +85,8 @@ void init_gl(struct gn_state *state) {
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
-    glLineWidth(3.0f);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 void cleanup_gl(struct gn_state *state) {
@@ -85,7 +97,6 @@ void cleanup_gl(struct gn_state *state) {
 }
 
 void render(struct gn_state *state) {
-    glClearColor(0.05f, 0.05f, 0.05f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
     glUseProgram(state->line_prog);
@@ -95,12 +106,19 @@ void render(struct gn_state *state) {
     glUniform2f(state->line_res_loc, (float)state->output.width,
                 (float)state->output.height);
 
+    float buf[4];
     for (size_t i = 0; i < state->n_strokes; i++) {
         // printf("stroke %zu has n_pts %zu reported pts %zu\n", i,
         //        state->strokes[i].n_pts, state->strokes[i].pts_reported);
+        struct gn_stroke *stroke = &state->strokes[i];
+
+        unpack_rgba_i32(stroke->color, buf);
+        glUniform4f(state->line_col_loc, buf[0], buf[1], buf[2],
+                    state->active ? 1.0 : 0.3);
+        glLineWidth(stroke->width);
+
         glBufferSubData(GL_ARRAY_BUFFER, 0,
-                        state->strokes[i].n_pts * sizeof(struct gn_point),
-                        state->strokes[i].pts);
-        glDrawArrays(GL_LINE_STRIP, 0, state->strokes[i].n_pts);
+                        stroke->n_pts * sizeof(struct gn_point), stroke->pts);
+        glDrawArrays(GL_LINE_STRIP, 0, stroke->n_pts);
     }
 }

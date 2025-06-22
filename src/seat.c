@@ -16,7 +16,9 @@ static void seat_handle_pressed(struct gn_seat *seat) {
     if (seat->cur_stroke != NULL) {
         return;
     }
-    seat->cur_stroke = create_stroke(seat->state, 3.0f, 0xff0000ff);
+    struct gn_state *state = seat->state;
+    seat->cur_stroke = create_stroke(state, state->cur_stroke_width,
+                                     state->colors[state->color_ind]);
 }
 
 static void seat_handle_released(struct gn_seat *seat) {
@@ -116,20 +118,28 @@ static void keyboard_handle_key(void *data, struct wl_keyboard *wl_keyboard,
             seat_handle_released(seat);
             state->running = false;
             break;
-        case XKB_KEY_Shift_L:
-        case XKB_KEY_Shift_R:
-            printf("Shift down\n");
+        case XKB_KEY_1:
+        case XKB_KEY_2:
+        case XKB_KEY_3:
+        case XKB_KEY_4:
+        case XKB_KEY_5:
+            state->color_ind = (keysym & 0xF) - 1;
+            break;
+        case XKB_KEY_minus:
+            state->cur_stroke_width =
+                state->cur_stroke_width - 1.f < STROKE_MIN_WIDTH
+                    ? STROKE_MIN_WIDTH
+                    : state->cur_stroke_width - 1.f;
+            break;
+        case XKB_KEY_equal:
+            state->cur_stroke_width =
+                state->cur_stroke_width + 1.f > STROKE_MAX_WIDTH
+                    ? STROKE_MAX_WIDTH
+                    : state->cur_stroke_width + 1.f;
             break;
         }
-        break;
 
     case WL_KEYBOARD_KEY_STATE_RELEASED:
-        switch (keysym) {
-        case XKB_KEY_Shift_L:
-        case XKB_KEY_Shift_R:
-            printf("Shift up\n");
-            break;
-        }
         break;
     }
 }

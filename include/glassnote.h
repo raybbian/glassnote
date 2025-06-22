@@ -10,7 +10,13 @@
 #include <wayland-egl.h>
 #include <wayland-server-core.h>
 
-#define STATE_INITIAL_STROKES 64
+#define GN_STATE_INIT_STROKES 64
+#define GN_STATE_INIT_WIDTH 3.f
+#define GN_STATE_INIT_COLOR_1 0xd20f39ff
+#define GN_STATE_INIT_COLOR_2 0xfe640bff
+#define GN_STATE_INIT_COLOR_3 0xdf8e1dff
+#define GN_STATE_INIT_COLOR_4 0x40a02bff
+#define GN_STATE_INIT_COLOR_5 0x179299ff
 
 struct gn_output {
     struct gn_state *state;
@@ -48,13 +54,16 @@ struct gn_state {
 
     struct gn_output output;
 
+    int32_t colors[5];
+    size_t color_ind;
+    float cur_stroke_width;
     struct gn_stroke *strokes;
     size_t n_strokes, c_strokes;
 
     struct wl_list seats; // gn_seat::link
 
     GLuint line_prog;
-    GLuint line_vao, line_vbo, line_res_loc;
+    GLuint line_vao, line_vbo, line_res_loc, line_col_loc;
 };
 
 void noop();

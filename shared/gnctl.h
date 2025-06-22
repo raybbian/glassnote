@@ -6,5 +6,7 @@
 
 #define GN_SD_BUS_SHOW_CMD "ShowOverlay"
 #define GN_SD_BUS_HIDE_CMD "HideOverlay"
+#define GN_SD_BUS_COLOR_CMD "ChangeColor"
+#define GN_SD_BUS_WIDTH_CMD "ChangeWidth"
 
 #endif

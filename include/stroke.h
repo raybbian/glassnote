@@ -10,12 +10,15 @@
 #define STROKE_DEFAULT_CAPACITY 64
 #define STROKE_MAX_PTS 4096
 
+#define STROKE_MIN_WIDTH 1.f
+#define STROKE_MAX_WIDTH 24.f
+
 struct gn_stroke {
     struct gn_point *pts;
     size_t n_pts;
     size_t capacity;
 
-    float line_width;
+    float width;
     int32_t color;
 
     // index of segment start
@@ -25,7 +28,7 @@ struct gn_stroke {
     size_t pts_reported;
 };
 
-struct gn_stroke *create_stroke(struct gn_state *state, double line_width,
+struct gn_stroke *create_stroke(struct gn_state *state, double width,
                                 int32_t color);
 void extend_stroke(struct gn_stroke *stroke, double x, double y);
 void destroy_stroke(struct gn_stroke *stroke);

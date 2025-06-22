@@ -18,34 +18,40 @@
 static int on_show_overlay(sd_bus_message *m, void *userdata,
                            sd_bus_error *ret) {
     struct gn_state *state = userdata;
-    if (!state->output.configured) {
-        return sd_bus_reply_method_return(m, NULL);
+    bool success = false;
+
+    if (state->output.configured && !state->active) {
+        wl_surface_set_input_region(state->output.surface, NULL);
+        set_output_dirty(state);
+        state->active = true;
+        wl_surface_commit(state->output.surface);
+        success = true;
     }
 
-    wl_surface_set_input_region(state->output.surface, NULL);
-    wl_surface_commit(state->output.surface);
-
-    return sd_bus_reply_method_return(m, NULL);
+    return sd_bus_reply_method_return(m, "b", success);
 }
 
 static int on_hide_overlay(sd_bus_message *m, void *userdata,
                            sd_bus_error *ret) {
     struct gn_state *state = userdata;
-    if (!state->output.configured) {
-        return sd_bus_reply_method_return(m, NULL);
+    bool success = false;
+
+    if (state->output.configured && state->active) {
+        wl_surface_set_input_region(state->output.surface, state->empty_region);
+        set_output_dirty(state);
+        state->active = false;
+        wl_surface_commit(state->output.surface);
+        success = true;
     }
 
-    wl_surface_set_input_region(state->output.surface, state->empty_region);
-    wl_surface_commit(state->output.surface);
-
-    return sd_bus_reply_method_return(m, NULL);
+    return sd_bus_reply_method_return(m, "b", success);
 }
 
 static const sd_bus_vtable ipc_vtable[] = {
     SD_BUS_VTABLE_START(0),
-    SD_BUS_METHOD(GN_SD_BUS_SHOW_CMD, "", "", on_show_overlay,
+    SD_BUS_METHOD(GN_SD_BUS_SHOW_CMD, "", "b", on_show_overlay,
                   SD_BUS_VTABLE_UNPRIVILEGED),
-    SD_BUS_METHOD(GN_SD_BUS_HIDE_CMD, "", "", on_hide_overlay,
+    SD_BUS_METHOD(GN_SD_BUS_HIDE_CMD, "", "b", on_hide_overlay,
                   SD_BUS_VTABLE_UNPRIVILEGED),
     SD_BUS_VTABLE_END};
 
