@@ -5,8 +5,10 @@
 #include <GL/gl.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <systemd/sd-bus.h>
 #include <wayland-client.h>
 #include <wayland-egl.h>
+#include <wayland-server-core.h>
 
 #define STATE_INITIAL_STROKES 64
 
@@ -26,6 +28,7 @@ struct gn_output {
 
 struct gn_state {
     bool running;
+    bool active;
 
     struct wl_display *display;
     struct wl_registry *registry;
@@ -33,6 +36,9 @@ struct gn_state {
     struct zwlr_layer_shell_v1 *layer_shell;
     struct wp_cursor_shape_manager_v1 *cursor_shape_manager;
     struct xkb_context *xkb_context;
+
+    struct sd_bus *bus;
+    struct sd_bus_slot *bus_slot;
 
     struct wl_region *empty_region;
 

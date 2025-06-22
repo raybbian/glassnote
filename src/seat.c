@@ -178,6 +178,7 @@ void create_seat(struct gn_state *state, struct wl_seat *wl_seat) {
     struct gn_seat *seat = calloc(1, sizeof(struct gn_seat));
     if (seat == NULL) {
         fprintf(stderr, "Failed to allocate memory for seat\n");
+        return;
     }
 
     seat->state = state;

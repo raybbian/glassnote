@@ -2,16 +2,20 @@
 #include <EGL/eglplatform.h>
 #include <GLES3/gl32.h>
 #include <assert.h>
+#include <errno.h>
+#include <poll.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <wayland-client-protocol.h>
 #include <wayland-client.h>
+#include <wayland-server-core.h>
 #include <wayland-util.h>
 #include <xkbcommon/xkbcommon.h>
 
 #include "cursor-shape-v1-client-protocol.h"
 #include "glassnote.h"
+#include "ipc.h"
 #include "render.h"
 #include "seat.h"
 #include "stroke.h"
@@ -147,6 +151,11 @@ int main(int argc, char **argv) {
 
     wl_list_init(&state.seats);
 
+    if (setup_dbus(&state) != 0) {
+        fprintf(stderr, "Failed to setup dbus IPC\n");
+        return EXIT_FAILURE;
+    }
+
     state.display = wl_display_connect(NULL);
     if (!state.display) {
         fprintf(stderr, "Failed to connect to Wayland\n");
@@ -231,8 +240,54 @@ int main(int argc, char **argv) {
     wl_surface_commit(state.output.surface);
 
     state.running = true;
-    while (state.running && wl_display_dispatch(state.display) != -1) {
-        ;
+
+    int wl_fd = wl_display_get_fd(state.display);
+    int bus_fd = sd_bus_get_fd(state.bus);
+
+    struct pollfd fds[2];
+    fds[0].fd = wl_fd;
+    fds[0].events = POLLIN;
+    fds[1].fd = bus_fd;
+    fds[1].events = POLLIN;
+
+    while (state.running) {
+        wl_display_flush(state.display);
+        sd_bus_flush(state.bus);
+
+        uint64_t usec;
+        int ret = sd_bus_get_timeout(state.bus, &usec);
+        if (ret < 0) {
+            fprintf(stderr, "Could not get sd_bus_timeout");
+            break;
+        }
+        int timeout_ms = (ret == 0) ? -1 : (int)(usec / 1000);
+
+        int poll_ret = poll(fds, 2, timeout_ms);
+        if (poll_ret < 0) {
+            if (errno == EINTR) {
+                continue;
+            }
+            fprintf(stderr, "Poll error\n");
+            break;
+        }
+
+        if (fds[0].revents & POLLIN) {
+            if (wl_display_dispatch(state.display) < 0) {
+                fprintf(stderr, "Wayland dispatch error\n");
+                break;
+            }
+        }
+
+        if (poll_ret == 0 || (fds[1].revents & POLLIN)) {
+            int r;
+            do {
+                r = sd_bus_process(state.bus, NULL);
+                if (r < 0) {
+                    fprintf(stderr, "sd_bus_process: %s\n", strerror(-r));
+                    exit(1);
+                }
+            } while (r > 0);
+        }
     }
 
     struct gn_seat *seat_tmp, *seat;
@@ -264,6 +319,8 @@ int main(int argc, char **argv) {
     wl_registry_destroy(state.registry);
     xkb_context_unref(state.xkb_context);
     wl_display_disconnect(state.display);
+
+    cleanup_dbus(&state);
 
     for (size_t i = 0; i < state.n_strokes; i++) {
         destroy_stroke(&state.strokes[i]);

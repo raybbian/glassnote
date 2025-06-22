@@ -11,9 +11,7 @@ add_project_arguments('-Wno-unused-parameter', language: 'c')
 
 cc = meson.get_compiler('c')
 
-# cairo = dependency('cairo')
-# realtime = cc.find_library('rt')
-# wayland_cursor = dependency('wayland-cursor')
+libsystemd = dependency('libsystemd')
 wayland_client = dependency('wayland-client')
 wayland_protos = dependency('wayland-protocols', version: '>=1.32')
 egl = dependency('egl')
@@ -22,21 +20,20 @@ wayland_egl = dependency('wayland-egl')
 math = cc.find_library('m')
 xkbcommon = dependency('xkbcommon')
 
-
-# xkbcommon = dependency('xkbcommon')
-
 subdir('protocol')
 
 executable(
     'glassnote',
     [
-        'main.c',
-        'render.c',
-        'stroke.c',
-        'seat.c',
+        'src/main.c',
+        'src/render.c',
+        'src/stroke.c',
+        'src/seat.c',
+        'src/ipc.c',
         protos_src,
     ],
     dependencies: [
+        libsystemd,
         wayland_client,
         egl,
         open_gl, 
@@ -44,6 +41,23 @@ executable(
         math,
         xkbcommon
     ],
-    include_directories: 'include',
+    include_directories: [
+        'include',
+        'shared',
+    ],
+    install: true,
+)
+
+executable(
+    'gnctl',
+    [
+        'gnctl/main.c'
+    ],
+    dependencies: [
+        libsystemd,
+    ],
+    include_directories: [
+        'shared',
+    ],
     install: true,
 )
