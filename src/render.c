@@ -72,6 +72,47 @@ static GLuint link_program(GLuint vs, GLuint fs) {
     return p;
 }
 
+int init_egl(struct gn_state *state) {
+    eglBindAPI(EGL_OPENGL_ES_API);
+    state->egl_display = eglGetDisplay((EGLNativeDisplayType)state->display);
+    if (state->egl_display == EGL_NO_DISPLAY) {
+        return -1;
+    }
+
+    if (eglInitialize(state->egl_display, NULL, NULL) != EGL_TRUE) {
+        return -1;
+    }
+
+    // clang-format off
+    const EGLint config_attribs[] = {
+        EGL_RENDERABLE_TYPE, EGL_OPENGL_ES3_BIT,
+        EGL_SURFACE_TYPE,    EGL_WINDOW_BIT,
+        EGL_RED_SIZE,        8,
+        EGL_GREEN_SIZE,      8,
+        EGL_BLUE_SIZE,       8,
+        EGL_ALPHA_SIZE,      8,
+        EGL_SAMPLE_BUFFERS,  1,
+        EGL_SAMPLES,         4,
+        EGL_NONE
+    };
+    // clang-format on
+
+    EGLint num_configs;
+    eglChooseConfig(state->egl_display, config_attribs, &state->egl_config, 1,
+                    &num_configs);
+
+    const EGLint ctx_attribs[] = {EGL_CONTEXT_CLIENT_VERSION, 3,
+                                  EGL_CONTEXT_MINOR_VERSION, 2, EGL_NONE};
+    state->egl_context = eglCreateContext(state->egl_display, state->egl_config,
+                                          EGL_NO_CONTEXT, ctx_attribs);
+    return 0;
+}
+
+void cleanup_egl(struct gn_state *state) {
+    eglDestroyContext(state->egl_display, state->egl_context);
+    eglTerminate(state->egl_display);
+}
+
 void init_gl(struct gn_state *state) {
     // clang-format off
     static const char *vs_src = 
@@ -176,6 +217,7 @@ void init_gl(struct gn_state *state) {
     glEnable(GL_BLEND);
     glBlendFuncSeparate(GL_SRC_ALPHA, GL_ZERO, GL_ONE, GL_ONE);
     glBlendEquationSeparate(GL_FUNC_ADD, GL_MAX);
+    glEnable(GL_MULTISAMPLE);
 }
 
 void cleanup_gl(struct gn_state *state) {
@@ -184,6 +226,7 @@ void cleanup_gl(struct gn_state *state) {
     glUseProgram(0);
     glDeleteProgram(gl->program_id);
     glDeleteBuffers(1, &gl->mesh_vbo);
+    glDeleteBuffers(1, &gl->instance_vbo);
     glDeleteVertexArrays(1, &gl->vao);
 }
 

@@ -195,39 +195,10 @@ int main(int argc, char **argv) {
 
     state.empty_region = wl_compositor_create_region(state.compositor);
 
-    eglBindAPI(EGL_OPENGL_ES_API);
-    state.egl_display = eglGetDisplay((EGLNativeDisplayType)state.display);
-    if (state.egl_display == EGL_NO_DISPLAY) {
-        fprintf(stderr, "Can't create egl display\n");
+    if (init_egl(&state) == -1) {
+        fprintf(stderr, "Could not initialize EGL\n");
         return EXIT_FAILURE;
-    }
-
-    if (eglInitialize(state.egl_display, NULL, NULL) != EGL_TRUE) {
-        fprintf(stderr, "Can't initialize egl display\n");
-        return EXIT_FAILURE;
-    }
-
-    const EGLint config_attribs[] = {EGL_SURFACE_TYPE,
-                                     EGL_WINDOW_BIT,
-                                     EGL_RED_SIZE,
-                                     8,
-                                     EGL_GREEN_SIZE,
-                                     8,
-                                     EGL_BLUE_SIZE,
-                                     8,
-                                     EGL_ALPHA_SIZE,
-                                     8,
-                                     EGL_RENDERABLE_TYPE,
-                                     EGL_OPENGL_ES3_BIT,
-                                     EGL_NONE};
-    EGLint num_configs;
-    eglChooseConfig(state.egl_display, config_attribs, &state.egl_config, 1,
-                    &num_configs);
-
-    const EGLint ctx_attribs[] = {EGL_CONTEXT_CLIENT_VERSION, 3,
-                                  EGL_CONTEXT_MINOR_VERSION, 2, EGL_NONE};
-    state.egl_context = eglCreateContext(state.egl_display, state.egl_config,
-                                         EGL_NO_CONTEXT, ctx_attribs);
+    };
 
     state.output.surface = wl_compositor_create_surface(state.compositor);
     state.output.layer_surface = zwlr_layer_shell_v1_get_layer_surface(
@@ -307,18 +278,19 @@ int main(int argc, char **argv) {
     // Ensure compositor has unmapped surfaces
     wl_display_roundtrip(state.display);
 
-    cleanup_gl(&state);
-
     if (state.output.frame_callback) {
         wl_callback_destroy(state.output.frame_callback);
     }
-    eglDestroySurface(state.egl_display, state.output.egl_surface);
-    wl_egl_window_destroy(state.output.egl_window);
+    if (state.output.configured) {
+        cleanup_gl(&state);
+        eglDestroySurface(state.egl_display, state.output.egl_surface);
+        wl_egl_window_destroy(state.output.egl_window);
+        state.output.configured = false;
+    }
     zwlr_layer_surface_v1_destroy(state.output.layer_surface);
     wl_surface_destroy(state.output.surface);
 
-    eglDestroyContext(state.egl_display, state.egl_context);
-    eglTerminate(state.egl_display);
+    cleanup_egl(&state);
 
     wl_region_destroy(state.empty_region);
 

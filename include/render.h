@@ -24,6 +24,8 @@ struct gn_lines_device {
     } attribs;
 };
 
+int init_egl(struct gn_state *state);
+void cleanup_egl(struct gn_state *state);
 void init_gl(struct gn_state *state);
 void cleanup_gl(struct gn_state *state);
 void render(struct gn_state *state);
