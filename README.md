@@ -45,6 +45,7 @@ Then run:
 git clone https://github.com/raybbian/glassnote
 cd glassnote
 meson setup build
+cd build
 meson compile
 ```
 
