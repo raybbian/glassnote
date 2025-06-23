@@ -21,7 +21,19 @@ static void seat_handle_pressed(struct gn_seat *seat) {
                                      state->colors[state->color_ind]);
 }
 
+static void seat_handle_moved(struct gn_seat *seat) {
+    if (seat->cur_stroke == NULL) {
+        return;
+    }
+    extend_stroke(seat->cur_stroke, seat->pointer_loc.x, seat->pointer_loc.y);
+    set_output_dirty(seat->state);
+}
+
 static void seat_handle_released(struct gn_seat *seat) {
+    if (seat->cur_stroke == NULL) {
+        return;
+    }
+    finish_stroke(seat->cur_stroke);
     seat->cur_stroke = NULL;
 }
 
@@ -43,15 +55,10 @@ static void pointer_handle_motion(void *data, struct wl_pointer *wl_pointer,
                                   uint32_t time, wl_fixed_t surface_x,
                                   wl_fixed_t surface_y) {
     struct gn_seat *seat = data;
-    if (seat->cur_stroke == NULL) {
-        return;
-    }
 
-    double x = wl_fixed_to_double(surface_x);
-    double y = wl_fixed_to_double(surface_y);
-    extend_stroke(seat->cur_stroke, x, y);
-
-    set_output_dirty(seat->state);
+    seat->pointer_loc.x = wl_fixed_to_double(surface_x);
+    seat->pointer_loc.y = wl_fixed_to_double(surface_y);
+    seat_handle_moved(seat);
 }
 
 static void pointer_handle_button(void *data, struct wl_pointer *wl_pointer,
@@ -126,12 +133,14 @@ static void keyboard_handle_key(void *data, struct wl_keyboard *wl_keyboard,
             state->color_ind = (keysym & 0xF) - 1;
             break;
         case XKB_KEY_minus:
+        case XKB_KEY_q:
             state->cur_stroke_width =
                 state->cur_stroke_width - 1.f < STROKE_MIN_WIDTH
                     ? STROKE_MIN_WIDTH
                     : state->cur_stroke_width - 1.f;
             break;
         case XKB_KEY_equal:
+        case XKB_KEY_w:
             state->cur_stroke_width =
                 state->cur_stroke_width + 1.f > STROKE_MAX_WIDTH
                     ? STROKE_MAX_WIDTH

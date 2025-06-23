@@ -28,7 +28,7 @@ struct gn_stroke *create_stroke(struct gn_state *state, double width,
     stroke->pts_reported = 0;
     stroke->width = width;
     stroke->color = color;
-    stroke->pts = calloc(stroke->capacity, sizeof(struct gn_point));
+    stroke->pts = calloc(stroke->capacity, sizeof(struct gn_vec2));
 
     if (stroke->pts == NULL) {
         fprintf(stderr, "Failed to allocate memory for stroke points\n");
@@ -41,13 +41,13 @@ void extend_stroke(struct gn_stroke *stroke, double x, double y) {
     stroke->pts_reported++;
 
     if (stroke->seg_st + 1 < stroke->n_pts) {
-        struct gn_point n_pt = {x, y};
+        struct gn_vec2 n_pt = {x, y};
         float max_dist = 0.0;
         size_t index = -1;
 
         for (size_t i = stroke->seg_st + 1; i < stroke->n_pts; i++) {
-            float dist =
-                gn_perp_dist(stroke->pts[i], stroke->pts[stroke->seg_st], n_pt);
+            float dist = gn_vec2_perp_dist(stroke->pts[i],
+                                           stroke->pts[stroke->seg_st], n_pt);
             if (dist > max_dist) {
                 max_dist = dist;
                 index = i;
@@ -75,7 +75,7 @@ add_point:
 
         stroke->capacity *= 2;
         stroke->pts =
-            realloc(stroke->pts, stroke->capacity * sizeof(struct gn_point));
+            realloc(stroke->pts, stroke->capacity * sizeof(struct gn_vec2));
 
         if (stroke->pts == NULL) {
             fprintf(stderr, "Failed to allocate memory for more strokes\n");
@@ -86,6 +86,14 @@ add_point:
     stroke->pts[stroke->n_pts].x = x;
     stroke->pts[stroke->n_pts].y = y;
     stroke->n_pts++;
+}
+
+void finish_stroke(struct gn_stroke *stroke) {
+    if (stroke->seg_st + 1 < stroke->n_pts) {
+        stroke->seg_st++;
+        stroke->pts[stroke->seg_st] = stroke->pts[stroke->n_pts - 1];
+        stroke->n_pts = stroke->seg_st + 1;
+    }
 }
 
 void destroy_stroke(struct gn_stroke *stroke) {

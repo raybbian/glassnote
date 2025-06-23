@@ -5,6 +5,7 @@
 #include <wayland-util.h>
 
 #include "glassnote.h"
+#include "utils.h"
 
 struct gn_seat {
     struct gn_state *state;
@@ -17,6 +18,7 @@ struct gn_seat {
 
     struct wl_pointer *wl_pointer;
     struct wl_touch *wl_touch;
+    struct gn_vec2 pointer_loc;
 
     struct gn_stroke *cur_stroke;
 };

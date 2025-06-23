@@ -14,7 +14,7 @@
 #define STROKE_MAX_WIDTH 24.f
 
 struct gn_stroke {
-    struct gn_point *pts;
+    struct gn_vec2 *pts;
     size_t n_pts;
     size_t capacity;
 
@@ -31,6 +31,7 @@ struct gn_stroke {
 struct gn_stroke *create_stroke(struct gn_state *state, double width,
                                 int32_t color);
 void extend_stroke(struct gn_stroke *stroke, double x, double y);
+void finish_stroke(struct gn_stroke *stroke);
 void destroy_stroke(struct gn_stroke *stroke);
 
 #endif
