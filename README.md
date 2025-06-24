@@ -20,7 +20,7 @@ https://github.com/user-attachments/assets/b16f2b4e-cf1f-4f46-af81-26d6aba5a34c
 - [x] Toggleable canvas
 - [ ] Touch support
 - [ ] Tablet support (lol)
-- [ ] Undo support
+- [x] Undo support
 - [ ] Eraser tool
 
 ## Building/Installation

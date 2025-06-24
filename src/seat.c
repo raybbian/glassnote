@@ -146,6 +146,14 @@ static void keyboard_handle_key(void *data, struct wl_keyboard *wl_keyboard,
                     ? STROKE_MAX_WIDTH
                     : state->cur_stroke_width + 1.f;
             break;
+        case XKB_KEY_z:
+            seat_handle_released(seat);
+            if (state->n_strokes >= 1) {
+                destroy_stroke(&state->strokes[state->n_strokes - 1]);
+                state->n_strokes--;
+                set_output_dirty(state);
+            }
+            break;
         }
 
     case WL_KEYBOARD_KEY_STATE_RELEASED:
